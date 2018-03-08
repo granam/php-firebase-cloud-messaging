@@ -5,130 +5,100 @@ Currently this app server library only supports sending Messages/Notifications v
 
 See original Firebase docs: https://firebase.google.com/docs/
 
-#Setup
-Install via Composer:
-```
-composer require sngrl/php-firebase-cloud-messaging
-```
+*Requires **PHP 7.1**, if you have to rely on lower version, use [original PHP FCM library](https://github.com/sngrl/php-firebase-cloud-messaging) or [some clone of it](https://github.com/sngrl/php-firebase-cloud-messaging/network).*
 
-Or add this to your composer.json and run "composer update":
+#Send message to Device or Topic
 
-```
-"require": {
-    "sngrl/php-firebase-cloud-messaging": "dev-master"
-}
-```
+```php
+<?php
+use granam\FirebaseCloudMessaging\FcmClient;
+use granam\FirebaseCloudMessaging\FcmMessage;
+use granam\FirebaseCloudMessaging\Target\FcmTopicTarget;
+use granam\FirebaseCloudMessaging\Target\FcmDeviceTarget;
+use granam\FirebaseCloudMessaging\FcmNotification;
 
-#Send message to Device
-```
-use sngrl\PhpFirebaseCloudMessaging\Client;
-use sngrl\PhpFirebaseCloudMessaging\Message;
-use sngrl\PhpFirebaseCloudMessaging\Recipient\Device;
-use sngrl\PhpFirebaseCloudMessaging\Notification;
-
-$server_key = '_YOUR_SERVER_KEY_';
-$client = new Client();
-$client->setApiKey($server_key);
-$client->injectGuzzleHttpClient(new \GuzzleHttp\Client());
-
-$message = new Message();
+$client = new FcmClient(new \GuzzleHttp\Client(), '_YOUR_SERVER_KEY_');
+$message = new FcmMessage();
 $message->setPriority('high');
-$message->addRecipient(new Device('_YOUR_DEVICE_TOKEN_'));
 $message
-    ->setNotification(new Notification('some title', 'some body'))
-    ->setData(['key' => 'value'])
-;
+    ->setNotification(new FcmNotification('A message from Foo!', 'Hi Bar, how are you?'))
+    ->setData(['photo' => 'https://example.com/photos/Foo.png']);
+$messageForTopic = clone $message;
+// you can NOT combine multiple recipient types as topic and device in a single message
+$messageForTopic->addTarget(new FcmTopicTarget('_YOUR_TOPIC_'));
+$message->addTarget(new FcmDeviceTarget('_YOUR_DEVICE_TOKEN_'));
 
 $response = $client->send($message);
-var_dump($response->getStatusCode());
-var_dump($response->getBody()->getContents());
+var_dump($response);
+$responseFromTopic = $client->send($messageForTopic);
+var_dump($responseFromTopic);
 ```
 
 #Send message to multiple Devices
 
-```
-...
-$message = new Message();
+```php
+<?php
+use granam\FirebaseCloudMessaging\FcmMessage;
+use granam\FirebaseCloudMessaging\Target\FcmDeviceTarget;
+use granam\FirebaseCloudMessaging\FcmNotification;
+
+$message = new FcmMessage();
 $message->setPriority('high');
-$message->addRecipient(new Device('_YOUR_DEVICE_TOKEN_'));
-$message->addRecipient(new Device('_YOUR_DEVICE_TOKEN_2_'));
-$message->addRecipient(new Device('_YOUR_DEVICE_TOKEN_3_'));
+$message->addTarget(new FcmDeviceTarget('_YOUR_DEVICE_TOKEN_'));
+$message->addTarget(new FcmDeviceTarget('_YOUR_DEVICE_TOKEN_2_'));
+$message->addTarget(new FcmDeviceTarget('_YOUR_DEVICE_TOKEN_3_'));
 $message
-    ->setNotification(new Notification('some title', 'some body'))
-    ->setData(['key' => 'value'])
-;
-...
-```
-#Send message to Topic
-
-```
-use sngrl\PhpFirebaseCloudMessaging\Client;
-use sngrl\PhpFirebaseCloudMessaging\Message;
-use sngrl\PhpFirebaseCloudMessaging\Recipient\Topic;
-use sngrl\PhpFirebaseCloudMessaging\Notification;
-
-$server_key = '_YOUR_SERVER_KEY_';
-$client = new Client();
-$client->setApiKey($server_key);
-$client->injectGuzzleHttpClient(new \GuzzleHttp\Client());
-
-$message = new Message();
-$message->setPriority('high');
-$message->addRecipient(new Topic('_YOUR_TOPIC_'));
-$message
-    ->setNotification(new Notification('some title', 'some body'))
-    ->setData(['key' => 'value'])
-;
-
-$response = $client->send($message);
-var_dump($response->getStatusCode());
-var_dump($response->getBody()->getContents());
+    ->setNotification(new FcmNotification('You are wanted', 'We got some issue here, where are you? We need you.'))
+    ->setData(['attachment' => 'data:image/gif;base64,FooBar==']);
+// ...
 ```
 
 #Send message to multiple Topics
 
 See Firebase documentation for sending to [combinations of multiple topics](https://firebase.google.com/docs/cloud-messaging/topic-messaging#sending_topic_messages_from_the_server).
 
-```
-...
-$message = new Message();
+```php
+<?php
+use granam\FirebaseCloudMessaging\FcmMessage;
+use granam\FirebaseCloudMessaging\FcmNotification;
+use granam\FirebaseCloudMessaging\Target\FcmTopicTarget;
+
+$message = new FcmMessage();
 $message->setPriority('high');
-$message->addRecipient(new Topic('_YOUR_TOPIC_'));
-$message->addRecipient(new Topic('_YOUR_TOPIC_2_'));
-$message->addRecipient(new Topic('_YOUR_TOPIC_3_'));
+$message->addTarget(new FcmTopicTarget('_YOUR_TOPIC_'));
+$message->addTarget(new FcmTopicTarget('_YOUR_TOPIC_2_'));
+$message->addTarget(new FcmTopicTarget('_YOUR_TOPIC_3_'));
 $message
-    ->setNotification(new Notification('some title', 'some body'))
+    ->setNotification(new FcmNotification('some title', 'some body'))
     ->setData(['key' => 'value'])
-    // Will send to devices subscribed to topic 1 AND topic 2 or 3
-    ->setCondition('%s && (%s || %s)')
-;
-...
+    // will send to devices subscribed to topic 1 AND topic 2 or 3
+    ->setCondition('%s && (%s || %s)');
 ```
 
 #Subscribe user to the topic
-```
-use sngrl\PhpFirebaseCloudMessaging\Client;
+```php
+<?php
+use granam\FirebaseCloudMessaging\FcmClient;
 
-$server_key = '_YOUR_SERVER_KEY_';
-$client = new Client();
-$client->setApiKey($server_key);
-$client->injectGuzzleHttpClient(new \GuzzleHttp\Client());
-
-$response = $client->addTopicSubscription('_SOME_TOPIC_ID_', ['_FIRST_TOKEN_', '_SECOND_TOKEN_']);
+$client = new FcmClient(new \GuzzleHttp\Client(), '_YOUR_SERVER_KEY_');
+$response = $client->subscribeToTopic('_SOME_TOPIC_', ['_FIRST_DEVICE_TOKEN_', '_SECOND_DEVICE_TOKEN_']);
 var_dump($response->getStatusCode());
 var_dump($response->getBody()->getContents());
 ```
 
-#Remove user subscription to the topic
-```
-use sngrl\PhpFirebaseCloudMessaging\Client;
+#Remove user subscription from the topic
+```php
+<?php
+use granam\FirebaseCloudMessaging\FcmClient;
 
-$server_key = '_YOUR_SERVER_KEY_';
-$client = new Client();
-$client->setApiKey($server_key);
-$client->injectGuzzleHttpClient(new \GuzzleHttp\Client());
+$client = new FcmClient(new \GuzzleHttp\Client(), '_YOUR_SERVER_KEY_');
 
-$response = $client->removeTopicSubscription('_SOME_TOPIC_ID_', ['_FIRST_TOKEN_', '_SECOND_TOKEN_']);
+$response = $client->unsubscribeFromTopic('_SOME_TOPIC_', ['_FIRST_DEVICE_TOKEN_', '_SECOND_DEVICE_TOKEN_']);
 var_dump($response->getStatusCode());
 var_dump($response->getBody()->getContents());
+```
+
+#Install
+```
+composer require granam/php-firebase-cloud-messaging
 ```
