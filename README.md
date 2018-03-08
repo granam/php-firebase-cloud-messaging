@@ -7,7 +7,7 @@ See original Firebase docs: https://firebase.google.com/docs/
 
 *Requires **PHP 7.1**, if you have to rely on lower version, use [original PHP FCM library](https://github.com/sngrl/php-firebase-cloud-messaging) or [some clone of it](https://github.com/sngrl/php-firebase-cloud-messaging/network).*
 
-#Send message to Device or Topic
+## Send message to Device or Topic
 
 ```php
 <?php
@@ -34,7 +34,7 @@ $responseFromTopic = $client->send($messageForTopic);
 var_dump($responseFromTopic);
 ```
 
-#Send message to multiple Devices
+## Send message to multiple Devices
 
 ```php
 <?php
@@ -53,7 +53,7 @@ $message
 // ...
 ```
 
-#Send message to multiple Topics
+## Send message to multiple Topics
 
 See Firebase documentation for sending to [combinations of multiple topics](https://firebase.google.com/docs/cloud-messaging/topic-messaging#sending_topic_messages_from_the_server).
 
@@ -75,7 +75,7 @@ $message
     ->setCondition('%s && (%s || %s)');
 ```
 
-#Subscribe user to the topic
+## Subscribe user to the topic
 ```php
 <?php
 use granam\FirebaseCloudMessaging\FcmClient;
@@ -86,7 +86,7 @@ var_dump($response->getStatusCode());
 var_dump($response->getBody()->getContents());
 ```
 
-#Remove user subscription from the topic
+## Remove user subscription from the topic
 ```php
 <?php
 use granam\FirebaseCloudMessaging\FcmClient;
@@ -98,7 +98,7 @@ var_dump($response->getStatusCode());
 var_dump($response->getBody()->getContents());
 ```
 
-#Install
+## Install
 ```
 composer require granam/php-firebase-cloud-messaging
 ```
