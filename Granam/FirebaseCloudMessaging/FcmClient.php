@@ -34,6 +34,7 @@ class FcmClient extends StrictObject
      * @param string $proxyApiUrl You can overwrite the API url with a proxy server url of your own
      * @param string $proxySubscribeToTopicUrl You can overwrite the API url with a proxy server url of your own
      * @param string $proxyUnsubscribeFromTopicUrl You can overwrite the API url with a proxy server url of your own
+     * @throws \Granam\FirebaseCloudMessaging\Exceptions\ApiKeyCanNotBeEmpty
      */
     public function __construct(
         GuzzleClient $guzzleClient,
@@ -44,10 +45,25 @@ class FcmClient extends StrictObject
     )
     {
         $this->guzzleClient = $guzzleClient;
-        $this->apiKey = $apiKey;
+        $this->apiKey = $this->sanitizeApiKeyNotEmpty($apiKey);
         $this->apiUrl = $proxyApiUrl ?? self::DEFAULT_API_URL;
         $this->subscribeToTopicUrl = $proxySubscribeToTopicUrl ?? self::DEFAULT_URL_TO_SUBSCRIBE_TO_TOPIC;
         $this->unsubscribeFromTopicUrl = $proxyUnsubscribeFromTopicUrl ?? self::DEFAULT_URL_TO_UNSUBSCRIBE_FROM_TOPIC;
+    }
+
+    /**
+     * @param string $apiKey
+     * @return string
+     * @throws \Granam\FirebaseCloudMessaging\Exceptions\ApiKeyCanNotBeEmpty
+     */
+    private function sanitizeApiKeyNotEmpty(string $apiKey): string
+    {
+        $apiKey = \trim($apiKey);
+        if ($apiKey === '') {
+            throw new Exceptions\ApiKeyCanNotBeEmpty('Given API key to send a message via FCM is empty');
+        }
+
+        return $apiKey;
     }
 
     /**
@@ -107,10 +123,10 @@ class FcmClient extends StrictObject
             [
                 'headers' => [
                     'Authorization' => 'key=' . $this->apiKey,
-                    'Content - Type' => 'application / json'
+                    'Content - Type' => 'application/json'
                 ],
                 'body' => \json_encode([
-                    'to' => ' / topics / ' . $topicCode,
+                    'to' => '/topics/' . $topicCode,
                     'registration_tokens' => $recipientsTokens,
                 ])
             ]
