@@ -24,10 +24,6 @@ class FcmMessage implements \JsonSerializable
     private $targets = [];
     private $targetType;
     private $condition;
-    private $contentAvailable = false;
-    private $backgroundColor = '';
-    /** @var int|null */
-    private $badge;
     private $ttl;
     private $delayWhileIdle;
 
@@ -134,46 +130,6 @@ class FcmMessage implements \JsonSerializable
         return $this;
     }
 
-    public function setContentAvailable(): FcmMessage
-    {
-        $this->contentAvailable = true;
-
-        return $this;
-    }
-
-    public function setContentUnavailable(): FcmMessage
-    {
-        $this->contentAvailable = false;
-
-        return $this;
-    }
-
-    /**
-     * Android only, set the notification's icon color, expressed in #rrggbb format.
-     *
-     * @param string $backgroundColor
-     * @return $this
-     * @throws \Granam\FirebaseCloudMessaging\Exceptions\InvalidRgbFormatOfBackgroundColor
-     */
-    public function setBackgroundColor(string $backgroundColor): FcmMessage
-    {
-        if ($backgroundColor !== '' && !\preg_match('~^#[0-9a-fA-F]{6}$~', $backgroundColor)) {
-            throw new Exceptions\InvalidRgbFormatOfBackgroundColor(
-                "Expected something like '#6563a4', got '{$backgroundColor}'"
-            );
-        }
-        $this->backgroundColor = $backgroundColor;
-
-        return $this;
-    }
-
-    public function setBadge(int $badge): FcmMessage
-    {
-        $this->badge = $badge;
-
-        return $this;
-    }
-
     /**
      * @return array
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\MissingTargets
@@ -184,7 +140,7 @@ class FcmMessage implements \JsonSerializable
      */
     public function jsonSerialize(): array
     {
-        $jsonData = [];
+        $jsonData = $this->getJsonData();
         $target = $this->createTargetForJson();
         if (\count($this->targets) === 1) {
             $jsonData['to'] = $target;
@@ -203,18 +159,16 @@ class FcmMessage implements \JsonSerializable
         if ($this->priority) {
             $jsonData['priority'] = $this->priority;
         }
-        if ($this->contentAvailable) {
-            $jsonData['content_available'] = $this->contentAvailable;
-        }
         if ($this->notification) {
             $jsonData['notification'] = $this->notification;
         }
-        if ($this->backgroundColor !== '') { // Android only
-            $jsonData['color'] = $this->notification;
-        }
-        if ($this->badge) { // iOS only
-            $jsonData['badge'] = $this->badge;
-        }
+
+        return $jsonData;
+    }
+
+    protected function getJsonData(): array
+    {
+        $jsonData = [];
         if ($this->ttl) {
             $jsonData['time_to_live'] = $this->ttl;
         }

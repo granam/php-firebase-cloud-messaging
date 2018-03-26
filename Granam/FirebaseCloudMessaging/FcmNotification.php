@@ -17,6 +17,7 @@ class FcmNotification extends FcmMessage
     private $clickAction;
     private $tag;
     private $contentAvailable;
+    private $androidBackgroundColor = '';
 
     public function __construct(
         string $title,
@@ -100,6 +101,33 @@ class FcmNotification extends FcmMessage
         return $this;
     }
 
+    /**
+     * Android only, set the notification's icon color, expressed in #rrggbb format.
+     *
+     * @param string $androidBackgroundColor
+     * @return $this
+     * @throws \Granam\FirebaseCloudMessaging\Exceptions\InvalidRgbFormatOfBackgroundColor
+     */
+    public function setAndroidBackgroundColor(string $androidBackgroundColor): FcmMessage
+    {
+        if ($androidBackgroundColor !== '' && !\preg_match('~^#[0-9a-fA-F]{6}$~', $androidBackgroundColor)) {
+            throw new Exceptions\InvalidRgbFormatOfBackgroundColor(
+                "Expected something like '#6563a4', got '{$androidBackgroundColor}'"
+            );
+        }
+        $this->androidBackgroundColor = $androidBackgroundColor;
+
+        return $this;
+    }
+
+    /**
+     * @return array
+     * @throws \Granam\FirebaseCloudMessaging\Exceptions\MissingTargets
+     * @throws \Granam\FirebaseCloudMessaging\Exceptions\ExceededLimitOfTopics
+     * @throws \Granam\FirebaseCloudMessaging\Exceptions\MissingMultipleTopicsCondition
+     * @throws \Granam\FirebaseCloudMessaging\Exceptions\CountOfTopicsDoesNotMatchConditionPattern
+     * @throws \Granam\FirebaseCloudMessaging\Exceptions\ExceededLimitOfDevices
+     */
     public function jsonSerialize(): array
     {
         $jsonData = $this->getJsonData();
@@ -126,6 +154,9 @@ class FcmNotification extends FcmMessage
         }
         if ($this->androidIcon !== '') {
             $jsonData['icon'] = $this->androidIcon;
+        }
+        if ($this->androidBackgroundColor !== '') {
+            $jsonData['color'] = $this->androidBackgroundColor;
         }
 
         return $jsonData;
