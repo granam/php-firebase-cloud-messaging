@@ -13,7 +13,7 @@ use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Psr7\Response as GuzzleResponse;
 use Mockery\MockInterface;
 
-class ClientTest extends TestWithMockery
+class FcmClientTest extends TestWithMockery
 {
     /**
      * @test
@@ -51,5 +51,45 @@ class ClientTest extends TestWithMockery
     private function createGuzzleResponse(): GuzzleResponse
     {
         return $this->mockery(GuzzleResponse::class);
+    }
+
+    /**
+     * @test
+     * @expectedException \Granam\FirebaseCloudMessaging\Exceptions\ApiKeyCanNotBeEmpty
+     */
+    public function I_can_not_create_it_with_empty_api_key(): void
+    {
+        new FcmClient($this->createGuzzleClient(), '');
+    }
+
+    /**
+     * @test
+     */
+    public function I_can_switch_topics(): void
+    {
+        $apiKey = 'foo';
+        $headers = [
+            'Authorization' => 'key=' . $apiKey,
+            'Content-Type' => 'application/json'
+        ];
+        $guzzleClient = $this->createGuzzleClient();
+        $guzzleClient->shouldReceive('post')
+            ->once()
+            ->with(
+                FcmClient::DEFAULT_URL_TO_SUBSCRIBE_TO_TOPIC,
+                ['headers' => $headers, 'body' => '{"to":"\\/topics\\/baz","registration_tokens":["qux","foo BAR"]}']
+            )
+            ->andReturn($guzzleResponse = $this->createGuzzleResponse());
+        $client = new FcmClient($guzzleClient, $apiKey);
+        self::assertSame($guzzleResponse, $client->subscribeToTopic('baz', ['qux', 'foo BAR']));
+
+        $guzzleClient->shouldReceive('post')
+            ->once()
+            ->with(
+                FcmClient::DEFAULT_URL_TO_UNSUBSCRIBE_FROM_TOPIC,
+                ['headers' => $headers, 'body' => '{"to":"\\/topics\\/bar","registration_tokens":["quux","baaz"]}']
+            )
+            ->andReturn($guzzleResponse = $this->createGuzzleResponse());
+        self::assertSame($guzzleResponse, $client->unsubscribeFromTopic('bar', ['quux', 'baaz']));
     }
 }
