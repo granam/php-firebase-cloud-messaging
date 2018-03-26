@@ -107,10 +107,10 @@ class FcmClient extends StrictObject
             [
                 'headers' => [
                     'Authorization' => 'key=' . $this->apiKey,
-                    'Content - Type' => 'application / json'
+                    'Content-Type' => 'application/json'
                 ],
                 'body' => \json_encode([
-                    'to' => ' / topics / ' . $topicCode,
+                    'to' => '/topics/' . $topicCode,
                     'registration_tokens' => $recipientsTokens,
                 ])
             ]
