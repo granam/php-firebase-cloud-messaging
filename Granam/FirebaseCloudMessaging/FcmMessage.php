@@ -16,15 +16,20 @@ class FcmMessage implements \JsonSerializable
     public const MAX_TOPICS = 3;
     public const MAX_DEVICES = 1000;
 
-    private $jsonData = [];
     private $notification;
-    private $collapseKey;
+    private $collapseKey = '';
     private $priority;
     private $data;
     /** @var array|FcmTarget[] */
     private $targets = [];
     private $targetType;
     private $condition;
+    private $contentAvailable = false;
+    private $backgroundColor = '';
+    /** @var int|null */
+    private $badge;
+    private $ttl;
+    private $delayWhileIdle;
 
     /**
      * @param FcmTarget $target
@@ -35,7 +40,7 @@ class FcmMessage implements \JsonSerializable
     {
         $this->targets[] = $target;
         $this->targetType = $this->targetType ?? \get_class($target);
-        if ($this->targetType !== \get_class($target)) {
+        if (!\is_a($target, $this->targetType) && !\is_a($this->targetType, \get_class($target), true /* both are just class names, no object */)) {
             $givenRecipientClass = \get_class($target);
             throw new Exceptions\CanNotMixRecipientTypes(
                 "Mixed target types are not supported by FCM, firstly set is '{$this->targetType}'"
@@ -53,11 +58,27 @@ class FcmMessage implements \JsonSerializable
         return $this;
     }
 
+    /**
+     * @return FcmNotification|null
+     */
+    public function getNotification(): ?FcmNotification
+    {
+        return $this->notification;
+    }
+
     public function setCollapseKey(string $collapseKey): FcmMessage
     {
         $this->collapseKey = $collapseKey;
 
         return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getCollapseKey(): string
+    {
+        return $this->collapseKey;
     }
 
     public function setPriority(string $priority): FcmMessage
@@ -92,84 +113,63 @@ class FcmMessage implements \JsonSerializable
         return $this;
     }
 
-    /**
-     * Set root message data via key
-     *
-     * @param string $key
-     * @param mixed $value
-     * @return $this
-     */
-    public function setJsonDataValue(string $key, $value): FcmMessage
-    {
-        $this->jsonData[$key] = $value;
-
-        return $this;
-    }
-
-    /**
-     * Unset root message data via key
-     *
-     * @param string $key
-     * @return $this
-     */
-    public function deleteJsonDataItem(string $key): FcmMessage
-    {
-        unset($this->jsonData[$key]);
-
-        return $this;
-    }
-
-    /**
-     * Get root message data via key
-     *
-     * @param string $key
-     * @return mixed
-     */
-    public function getJsonDataItem(string $key)
-    {
-        return $this->jsonData[$key];
-    }
-
-    /**
-     * Get root message data
-     *
-     * @return array
-     */
-    public function getJsonData(): array
-    {
-        return $this->jsonData;
-    }
-
-    /**
-     * Set root message data
-     *
-     * @param array $array
-     * @return $this
-     */
-    public function setJsonData(array $array): FcmMessage
-    {
-        $this->jsonData = $array;
-
-        return $this;
-    }
-
     public function enableDelayWhileIdle(): FcmMessage
     {
-        $this->setJsonDataValue('delay_while_idle', true);
+        $this->delayWhileIdle = true;
 
         return $this;
     }
 
     public function disableDelayWhileIdle(): FcmMessage
     {
-        $this->setJsonDataValue('delay_while_idle', false);
+        $this->delayWhileIdle = true;
 
         return $this;
     }
 
-    public function setTimeToLive(int $value): FcmMessage
+    public function setTimeToLive(int $ttl): FcmMessage
     {
-        $this->setJsonDataValue('time_to_live', $value);
+        $this->ttl = $ttl;
+
+        return $this;
+    }
+
+    public function setContentAvailable(): FcmMessage
+    {
+        $this->contentAvailable = true;
+
+        return $this;
+    }
+
+    public function setContentUnavailable(): FcmMessage
+    {
+        $this->contentAvailable = false;
+
+        return $this;
+    }
+
+    /**
+     * Android only, set the notification's icon color, expressed in #rrggbb format.
+     *
+     * @param string $backgroundColor
+     * @return $this
+     * @throws \Granam\FirebaseCloudMessaging\Exceptions\InvalidRgbFormatOfBackgroundColor
+     */
+    public function setBackgroundColor(string $backgroundColor): FcmMessage
+    {
+        if ($backgroundColor !== '' && !\preg_match('~^#[0-9a-fA-F]{6}$~', $backgroundColor)) {
+            throw new Exceptions\InvalidRgbFormatOfBackgroundColor(
+                "Expected something like '#6563a4', got '{$backgroundColor}'"
+            );
+        }
+        $this->backgroundColor = $backgroundColor;
+
+        return $this;
+    }
+
+    public function setBadge(int $badge): FcmMessage
+    {
+        $this->badge = $badge;
 
         return $this;
     }
@@ -184,17 +184,17 @@ class FcmMessage implements \JsonSerializable
      */
     public function jsonSerialize(): array
     {
+        $jsonData = [];
         $target = $this->createTargetForJson();
-        $jsonData = $this->jsonData;
         if (\count($this->targets) === 1) {
             $jsonData['to'] = $target;
-        } elseif ($this->targetType === FcmDeviceTarget::class) {
+        } elseif ($this->targetType === FcmDeviceTarget::class || \is_a($this->targetType, FcmDeviceTarget::class, true)) {
             $jsonData['registration_ids'] = $target;
         } else {
             $jsonData['condition'] = $target;
         }
 
-        if ($this->collapseKey) {
+        if ($this->collapseKey !== '') {
             $jsonData['collapse_key'] = $this->collapseKey;
         }
         if ($this->data) {
@@ -203,8 +203,23 @@ class FcmMessage implements \JsonSerializable
         if ($this->priority) {
             $jsonData['priority'] = $this->priority;
         }
+        if ($this->contentAvailable) {
+            $jsonData['content_available'] = $this->contentAvailable;
+        }
         if ($this->notification) {
             $jsonData['notification'] = $this->notification;
+        }
+        if ($this->backgroundColor !== '') { // Android only
+            $jsonData['color'] = $this->notification;
+        }
+        if ($this->badge) { // iOS only
+            $jsonData['badge'] = $this->badge;
+        }
+        if ($this->ttl) {
+            $jsonData['time_to_live'] = $this->ttl;
+        }
+        if ($this->delayWhileIdle !== null) {
+            $jsonData['delay_while_idle'] = $this->delayWhileIdle;
         }
 
         return $jsonData;

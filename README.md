@@ -1,9 +1,7 @@
 # PHP Firebase Cloud Messaging
-PHP API for Firebase Cloud Messaging from Google.
+PHP API for [Firebase Cloud Messaging from Google](https://firebase.google.com/docs/).
 
-Currently this app server library only supports sending Messages/Notifications via HTTP.
-
-See original Firebase docs: https://firebase.google.com/docs/
+This library supports Messages/Notifications via HTTP only.
 
 *Requires **PHP 7.1**, if you have to rely on lower version, use [original PHP FCM library](https://github.com/sngrl/php-firebase-cloud-messaging) or [some clone of it](https://github.com/sngrl/php-firebase-cloud-messaging/network).*
 
