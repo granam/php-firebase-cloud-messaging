@@ -29,6 +29,7 @@ class FcmMessage implements \JsonSerializable
 
     /**
      * @param FcmTarget $target
+     * @throws \Granam\FirebaseCloudMessaging\Exceptions\UnknownTargetType
      */
     public function __construct(FcmTarget $target)
     {
@@ -39,19 +40,35 @@ class FcmMessage implements \JsonSerializable
     /**
      * @param FcmTarget $target
      * @return \Granam\FirebaseCloudMessaging\FcmMessage
+     * @throws \Granam\FirebaseCloudMessaging\Exceptions\UnknownTargetType
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\CanNotMixRecipientTypes
+     * @throws \Granam\FirebaseCloudMessaging\Exceptions\ExceededLimitOfDevices
      */
     public function addTarget(FcmTarget $target): FcmMessage
     {
-        $this->targets[] = $target;
-        $this->targetType = $this->targetType ?? \get_class($target);
-        if (!\is_a($target, $this->targetType) && !\is_a($this->targetType, \get_class($target), true /* both are just class names, no object */)) {
-            $givenRecipientClass = \get_class($target);
-            throw new Exceptions\CanNotMixRecipientTypes(
-                "Mixed target types are not supported by FCM, firstly set is '{$this->targetType}'"
-                . ", but currently given is '$givenRecipientClass'"
+        $givenTargetType = \get_class($target);
+        if (!\is_a($target, FcmDeviceTarget::class) && !\is_a($target, FcmTopicTarget::class)) {
+            throw new Exceptions\UnknownTargetType(
+                'Expected target instance as one of ' . FcmDeviceTarget::class . ' or ' . FcmTopicTarget::class
+                . ', got ' . $givenTargetType
             );
         }
+        if ($this->targetType !== null
+            && !\is_a($target, $this->targetType)
+            && !\is_a($this->targetType, $givenTargetType, true /* both are just class names, not objects */)
+        ) {
+            throw new Exceptions\CanNotMixRecipientTypes(
+                "Mixed target types are not supported by FCM, firstly set is '{$this->targetType}'"
+                . ", but currently given is '$givenTargetType'"
+            );
+        }
+        if (\is_a($target, FcmDeviceTarget::class) && (\count($this->targets) + 1) > self::MAX_DEVICES) {
+            throw new Exceptions\ExceededLimitOfDevices(
+                'Message device limit exceeded. Firebase supports a maximum of ' . self::MAX_DEVICES . ' devices'
+            );
+        }
+        $this->targetType = $givenTargetType;
+        $this->targets[] = $target;
 
         return $this;
     }
@@ -60,15 +77,11 @@ class FcmMessage implements \JsonSerializable
      * @param array $targets
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\UnknownTargetType
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\CanNotMixRecipientTypes
+     * @throws \Granam\FirebaseCloudMessaging\Exceptions\ExceededLimitOfDevices
      */
     public function addTargets(array $targets): void
     {
         foreach ($targets as $target) {
-            if (!\is_a($target, FcmTarget::class)) {
-                throw new Exceptions\UnknownTargetType(
-                    'Expected instance of ' . FcmTarget::class . ', got ' . \get_class($target)
-                );
-            }
             $this->addTarget($target);
         }
     }
@@ -161,20 +174,12 @@ class FcmMessage implements \JsonSerializable
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\ExceededLimitOfTopics
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\MissingMultipleTopicsCondition
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\CountOfTopicsDoesNotMatchConditionPattern
-     * @throws \Granam\FirebaseCloudMessaging\Exceptions\ExceededLimitOfDevices
      */
     public function jsonSerialize(): array
     {
         $jsonData = $this->getJsonData();
-        $target = $this->createTargetForJson();
-        if (\count($this->targets) === 1) {
-            $jsonData['to'] = $target;
-        } elseif ($this->targetType === FcmDeviceTarget::class || \is_a($this->targetType, FcmDeviceTarget::class, true)) {
-            $jsonData['registration_ids'] = $target;
-        } else {
-            $jsonData['condition'] = $target;
-        }
-
+        ['value' => $target, 'key' => $targetKey] = $this->createTargetForJson();
+        $jsonData[$targetKey] = $target;
         if ($this->collapseKey !== '') {
             $jsonData['collapse_key'] = $this->collapseKey;
         }
@@ -205,72 +210,80 @@ class FcmMessage implements \JsonSerializable
     }
 
     /**
-     * @return array|null|string
+     * @return array|string[]|string[][]
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\ExceededLimitOfTopics
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\MissingMultipleTopicsCondition
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\CountOfTopicsDoesNotMatchConditionPattern
-     * @throws \Granam\FirebaseCloudMessaging\Exceptions\ExceededLimitOfDevices
      */
-    private function createTargetForJson()
+    private function createTargetForJson(): array
     {
-        $targetCounts = \count($this->targets);
-        switch ($this->targetType) {
-            case FcmTopicTarget::class :
-                if ($targetCounts === 1) {
-                    /** @var FcmTopicTarget $target */
-                    $target = \current($this->targets);
-
-                    return '/topics/' . $target->getTopicName();
-                }
-                if ($targetCounts > self::MAX_TOPICS) {
-                    throw new Exceptions\ExceededLimitOfTopics(
-                        'Message topic limit exceeded. Firebase supports a maximum of ' . self::MAX_TOPICS
-                        . " topics for a single message, got {$targetCounts} topics"
-                    );
-                }
-                if (!$this->condition) {
-                    throw new Exceptions\MissingMultipleTopicsCondition(
-                        'You must specify a condition pattern when sending to combinations of topics, see https://firebase.google.com/docs/cloud-messaging/topic-messaging#sending_topic_messages_from_the_server'
-                    );
-                }
-                if ($targetCounts !== \substr_count($this->condition, '%s')) {
-                    /** @noinspection IncompleteThrowStatementsInspection */
-                    throw new Exceptions\CountOfTopicsDoesNotMatchConditionPattern(
-                        "The number of message topics must match the number of occurrences of '%s' in the condition pattern: '{$this->condition}'"
-                        . ", got {$targetCounts} topics"
-                    );
-                }
-                $names = [];
-                /** @var FcmTopicTarget $target */
-                foreach ($this->targets as $target) {
-                    $names[] = "'{$target->getTopicName()}' in topics";
-                }
-
-                return \vsprintf($this->condition, $names);
-            case FcmDeviceTarget::class :
-                if ($targetCounts === 1) {
-                    /** @var FcmDeviceTarget $device */
-                    $device = \current($this->targets);
-
-                    return $device->getToken();
-                }
-                if ($targetCounts > self::MAX_DEVICES) {
-                    throw new Exceptions\ExceededLimitOfDevices(
-                        'Message device limit exceeded. Firebase supports a maximum of ' . self::MAX_DEVICES . ' devices'
-                        . ", got {$targetCounts} devices"
-                    );
-                }
-                $tokens = [];
-                /** @var FcmDeviceTarget $target */
-                foreach ($this->targets as $target) {
-                    $tokens[] = $target->getToken();
-                }
-
-                return $tokens;
-            default:
-                break;
+        if ($this->targetType === FcmTopicTarget::class) {
+            return $this->getFcmTopicTarget();
         }
 
-        return null;
+        return $this->getDeviceTarget();
+    }
+
+    /**
+     * @return string[]|array
+     * @throws \Granam\FirebaseCloudMessaging\Exceptions\ExceededLimitOfTopics
+     * @throws \Granam\FirebaseCloudMessaging\Exceptions\MissingMultipleTopicsCondition
+     * @throws \Granam\FirebaseCloudMessaging\Exceptions\CountOfTopicsDoesNotMatchConditionPattern
+     */
+    private function getFcmTopicTarget(): array
+    {
+        $targetCounts = \count($this->targets);
+        if ($targetCounts === 1) {
+            /** @var FcmTopicTarget $target */
+            $target = \current($this->targets);
+
+            return ['value' => '/topics/' . $target->getTopicName(), 'key' => 'to'];
+        }
+        if ($targetCounts > self::MAX_TOPICS) {
+            throw new Exceptions\ExceededLimitOfTopics(
+                'Message topic limit exceeded. Firebase supports a maximum of ' . self::MAX_TOPICS
+                . " topics for a single message, got {$targetCounts} topics"
+            );
+        }
+        if (!$this->condition) {
+            throw new Exceptions\MissingMultipleTopicsCondition(
+                'You must specify a condition pattern when sending to combinations of topics, see https://firebase.google.com/docs/cloud-messaging/topic-messaging#sending_topic_messages_from_the_server'
+            );
+        }
+        if ($targetCounts !== \substr_count($this->condition, '%s')) {
+            /** @noinspection IncompleteThrowStatementsInspection */
+            throw new Exceptions\CountOfTopicsDoesNotMatchConditionPattern(
+                "The number of message topics must match the number of occurrences of '%s' in the condition pattern: '{$this->condition}'"
+                . ", got {$targetCounts} topics"
+            );
+        }
+        $names = [];
+        /** @var FcmTopicTarget $target */
+        foreach ($this->targets as $target) {
+            $names[] = "'{$target->getTopicName()}' in topics";
+        }
+
+        return ['value' => \vsprintf($this->condition, $names), 'key' => 'condition'];
+    }
+
+    /**
+     * @return array|string[]|string[][]
+     */
+    private function getDeviceTarget(): array
+    {
+        $targetCounts = \count($this->targets);
+        if ($targetCounts === 1) {
+            /** @var FcmDeviceTarget $device */
+            $device = \current($this->targets);
+
+            return ['value' => $device->getDeviceToken(), 'key' => 'to'];
+        }
+        $deviceTokens = [];
+        /** @var FcmDeviceTarget $target */
+        foreach ($this->targets as $target) {
+            $deviceTokens[] = $target->getDeviceToken();
+        }
+
+        return ['value' => $deviceTokens, 'key' => 'registration_ids'];
     }
 }

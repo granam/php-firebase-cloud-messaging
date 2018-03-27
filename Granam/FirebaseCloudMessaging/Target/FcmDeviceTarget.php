@@ -6,15 +6,15 @@ namespace Granam\FirebaseCloudMessaging\Target;
 
 class FcmDeviceTarget extends FcmTarget
 {
-    private $token;
+    private $deviceToken;
 
-    public function __construct(string $token)
+    public function __construct(string $deviceToken)
     {
-        $this->token = $token;
+        $this->deviceToken = $deviceToken;
     }
 
-    public function getToken(): string
+    public function getDeviceToken(): string
     {
-        return $this->token;
+        return $this->deviceToken;
     }
 }

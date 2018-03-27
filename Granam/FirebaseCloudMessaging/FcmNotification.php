@@ -19,6 +19,18 @@ class FcmNotification extends FcmMessage
     private $contentAvailable;
     private $androidBackgroundColor = '';
 
+    /** @noinspection PhpMissingParentConstructorInspection */
+    /** @noinspection MagicMethodsValidityInspection */
+    /**
+     * @var string $title,
+     * @var string $body,
+     * @var string $sound = '',
+     * @var string $clickAction = '',
+     * @var string $tag = '',
+     * @var bool $contentAvailable = null,
+     * @var int $iosBadge = 0,
+     * @var string $androidIcon = ''
+     */
     public function __construct(
         string $title,
         string $body,
@@ -122,7 +134,6 @@ class FcmNotification extends FcmMessage
 
     /**
      * @return array
-     * @throws \Granam\FirebaseCloudMessaging\Exceptions\MissingTargets
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\ExceededLimitOfTopics
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\MissingMultipleTopicsCondition
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\CountOfTopicsDoesNotMatchConditionPattern
