@@ -16,15 +16,15 @@ use granam\FirebaseCloudMessaging\Target\FcmDeviceTarget;
 use granam\FirebaseCloudMessaging\FcmNotification;
 
 $client = new FcmClient(new \GuzzleHttp\Client(), '_YOUR_SERVER_KEY_');
-$message = new FcmMessage();
-$message->setPriority('high');
-$message
+$message = new FcmMessage(new FcmDeviceTarget('_YOUR_DEVICE_TOKEN_'));
+$message->setPriority('high')
     ->setNotification(new FcmNotification('A message from Foo!', 'Hi Bar, how are you?'))
     ->setData(['photo' => 'https://example.com/photos/Foo.png']);
-$messageForTopic = clone $message;
 // you can NOT combine multiple recipient types as topic and device in a single message
-$messageForTopic->addTarget(new FcmTopicTarget('_YOUR_TOPIC_'));
-$message->addTarget(new FcmDeviceTarget('_YOUR_DEVICE_TOKEN_'));
+$messageForTopic = new FcmMessage(new FcmTopicTarget('_YOUR_TOPIC_'));
+$messageForTopic
+    ->setNotification(new FcmNotification('Foo is looking for you!', 'Here you are!'))
+    ->setData(['map' => 'https://example.com/maps/foo']);
 
 $response = $client->send($message);
 var_dump($response);
@@ -40,12 +40,10 @@ use granam\FirebaseCloudMessaging\FcmMessage;
 use granam\FirebaseCloudMessaging\Target\FcmDeviceTarget;
 use granam\FirebaseCloudMessaging\FcmNotification;
 
-$message = new FcmMessage();
-$message->setPriority('high');
-$message->addTarget(new FcmDeviceTarget('_YOUR_DEVICE_TOKEN_'));
-$message->addTarget(new FcmDeviceTarget('_YOUR_DEVICE_TOKEN_2_'));
-$message->addTarget(new FcmDeviceTarget('_YOUR_DEVICE_TOKEN_3_'));
-$message
+$message = new FcmMessage(new FcmDeviceTarget('_YOUR_DEVICE_TOKEN_'));
+$message->addTarget(new FcmDeviceTarget('_YOUR_DEVICE_TOKEN_2_'))
+    ->addTarget(new FcmDeviceTarget('_YOUR_DEVICE_TOKEN_3_'))
+    ->setPriority('high')
     ->setNotification(new FcmNotification('You are wanted', 'We got some issue here, where are you? We need you.'))
     ->setData(['attachment' => 'data:image/gif;base64,FooBar==']);
 // ...
@@ -61,12 +59,10 @@ use granam\FirebaseCloudMessaging\FcmMessage;
 use granam\FirebaseCloudMessaging\FcmNotification;
 use granam\FirebaseCloudMessaging\Target\FcmTopicTarget;
 
-$message = new FcmMessage();
-$message->setPriority('high');
-$message->addTarget(new FcmTopicTarget('_YOUR_TOPIC_'));
-$message->addTarget(new FcmTopicTarget('_YOUR_TOPIC_2_'));
-$message->addTarget(new FcmTopicTarget('_YOUR_TOPIC_3_'));
-$message
+$message = new FcmMessage(new FcmTopicTarget('_YOUR_TOPIC_'));
+$message->addTarget(new FcmTopicTarget('_YOUR_TOPIC_2_'))
+    ->addTarget(new FcmTopicTarget('_YOUR_TOPIC_3_'))
+    ->setPriority('high')
     ->setNotification(new FcmNotification('some title', 'some body'))
     ->setData(['key' => 'value'])
     // will send to devices subscribed to topic 1 AND topic 2 or 3
