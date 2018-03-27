@@ -29,6 +29,15 @@ class FcmMessage implements \JsonSerializable
 
     /**
      * @param FcmTarget $target
+     */
+    public function __construct(FcmTarget $target)
+    {
+        /** @noinspection ExceptionsAnnotatingAndHandlingInspection */
+        $this->addTarget($target);
+    }
+
+    /**
+     * @param FcmTarget $target
      * @return \Granam\FirebaseCloudMessaging\FcmMessage
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\CanNotMixRecipientTypes
      */
@@ -45,6 +54,23 @@ class FcmMessage implements \JsonSerializable
         }
 
         return $this;
+    }
+
+    /**
+     * @param array $targets
+     * @throws \Granam\FirebaseCloudMessaging\Exceptions\UnknownTargetType
+     * @throws \Granam\FirebaseCloudMessaging\Exceptions\CanNotMixRecipientTypes
+     */
+    public function addTargets(array $targets): void
+    {
+        foreach ($targets as $target) {
+            if (!\is_a($target, FcmTarget::class)) {
+                throw new Exceptions\UnknownTargetType(
+                    'Expected instance of ' . FcmTarget::class . ', got ' . \get_class($target)
+                );
+            }
+            $this->addTarget($target);
+        }
     }
 
     public function setNotification(FcmNotification $notification): FcmMessage
@@ -132,7 +158,6 @@ class FcmMessage implements \JsonSerializable
 
     /**
      * @return array
-     * @throws \Granam\FirebaseCloudMessaging\Exceptions\MissingTargets
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\ExceededLimitOfTopics
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\MissingMultipleTopicsCondition
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\CountOfTopicsDoesNotMatchConditionPattern
@@ -181,7 +206,6 @@ class FcmMessage implements \JsonSerializable
 
     /**
      * @return array|null|string
-     * @throws \Granam\FirebaseCloudMessaging\Exceptions\MissingTargets
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\ExceededLimitOfTopics
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\MissingMultipleTopicsCondition
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\CountOfTopicsDoesNotMatchConditionPattern
@@ -190,9 +214,6 @@ class FcmMessage implements \JsonSerializable
     private function createTargetForJson()
     {
         $targetCounts = \count($this->targets);
-        if ($targetCounts === 0) {
-            throw new Exceptions\MissingTargets('Message must have at least one target set');
-        }
         switch ($this->targetType) {
             case FcmTopicTarget::class :
                 if ($targetCounts === 1) {

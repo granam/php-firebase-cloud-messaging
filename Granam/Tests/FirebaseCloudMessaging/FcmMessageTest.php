@@ -4,6 +4,7 @@ namespace sngrl\Granam\Tests;
 use Granam\FirebaseCloudMessaging\FcmMessage;
 use Granam\FirebaseCloudMessaging\FcmNotification;
 use Granam\FirebaseCloudMessaging\Target\FcmDeviceTarget;
+use Granam\FirebaseCloudMessaging\Target\FcmTarget;
 use Granam\FirebaseCloudMessaging\Target\FcmTopicTarget;
 use Granam\Tests\Tools\TestWithMockery;
 
@@ -15,17 +16,16 @@ class FcmMessageTest extends TestWithMockery
      */
     public function I_can_not_mix_recipient_types(): void
     {
-        (new FcmMessage())->addTarget(new FcmTopicTarget('breaking-news'))
+        (new FcmMessage($this->createTarget()))->addTarget(new FcmTopicTarget('breaking-news'))
             ->addTarget(new FcmDeviceTarget('NA Palm OS'));
     }
 
     /**
-     * @test
-     * @expectedException \Granam\FirebaseCloudMessaging\Exceptions\MissingTargets
+     * @return FcmTarget|\Mockery\MockInterface
      */
-    public function I_can_not_get_it_in_json_without_recipients(): void
+    private function createTarget(): FcmTarget
     {
-        (new FcmMessage())->jsonSerialize();
+        return $this->mockery(FcmTarget::class);
     }
 
     /**
@@ -34,9 +34,8 @@ class FcmMessageTest extends TestWithMockery
      */
     public function I_can_not_get_it_in_json_with_multiple_topics_but_without_condition_pattern(): void
     {
-        $message = new FcmMessage();
-        $message->addTarget(new FcmTopicTarget('breaking-news'))
-            ->addTarget(new FcmTopicTarget('fixing news'));
+        $message = new FcmMessage(new FcmTopicTarget('breaking-news'));
+        $message->addTarget(new FcmTopicTarget('fixing news'));
 
         $message->jsonSerialize();
     }
@@ -48,9 +47,8 @@ class FcmMessageTest extends TestWithMockery
     {
         $body = '{"to":"\/topics\/breaking-news","notification":{"title":"test","body":"a nice testing notification"}}';
 
-        $message = new FcmMessage();
+        $message = new FcmMessage(new FcmTopicTarget('breaking-news'));
         $message->setNotification(new FcmNotification('test', 'a nice testing notification'));
-        $message->addTarget(new FcmTopicTarget('breaking-news'));
         $this->assertSame($body, \json_encode($message));
     }
 
@@ -62,13 +60,52 @@ class FcmMessageTest extends TestWithMockery
         $body = '{"to":"deviceId","notification":{"title":"test","body":"a nice testing notification"}}';
 
         $notification = new FcmNotification('test', 'a nice testing notification');
-        $message = new FcmMessage();
+        $message = new FcmMessage(new FcmDeviceTarget('deviceId'));
         $message->setNotification($notification);
 
-        $message->addTarget(new FcmDeviceTarget('deviceId'));
         $this->assertSame(
             $body,
             json_encode($message)
         );
     }
+
+    /**
+     * @test
+     */
+    public function I_can_set_notification_and_get_it_back(): void
+    {
+        $message = new FcmMessage($this->createTarget());
+        self::assertNull($message->getNotification());
+        $message->setNotification($notification = $this->createNotification());
+        self::assertSame($notification, $message->getNotification());
+    }
+
+    /**
+     * @return \Mockery\MockInterface|FcmNotification
+     */
+    private function createNotification(): FcmNotification
+    {
+        return $this->mockery(FcmNotification::class);
+    }
+
+    /**
+     * @test
+     */
+    public function I_can_set_collapse_key_and_get_it_back(): void
+    {
+        $message = new FcmMessage($this->createTarget());
+        self::assertSame('', $message->getCollapseKey());
+        $message->setCollapseKey('foo');
+        self::assertSame('foo', $message->getCollapseKey());
+    }
+
+    /**
+     * @test
+     */
+    public function I_can_set_every_parameter(): void
+    {
+        $message = new FcmMessage($this->createTarget());
+        $message->jsonSerialize();
+    }
+
 }

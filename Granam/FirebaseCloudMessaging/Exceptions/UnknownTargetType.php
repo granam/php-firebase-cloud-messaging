@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Granam\FirebaseCloudMessaging\Exceptions;
 
-class MissingTargets extends \LogicException implements Logic
+class UnknownTargetType extends \LogicException implements Logic
 {
 
 }

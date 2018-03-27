@@ -32,8 +32,7 @@ class FcmClientTest extends TestWithMockery
             ->andReturn($guzzleResponse = $this->createGuzzleResponse());
 
         $client = new FcmClient($guzzleClient, $apiKey);
-        $message = new FcmMessage();
-        $message->addTarget(new FcmTopicTarget('bar'));
+        $message = new FcmMessage(new FcmTopicTarget('bar'));
         self::assertSame($guzzleResponse, $client->send($message));
     }
 
