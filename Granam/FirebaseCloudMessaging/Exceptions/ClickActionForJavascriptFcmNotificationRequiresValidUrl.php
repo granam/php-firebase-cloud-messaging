@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Granam\FirebaseCloudMessaging\Exceptions;
 
-class InvalidRgbFormatOfBackgroundColor extends \LogicException implements Logic
+class ClickActionForJavascriptFcmNotificationRequiresValidUrl extends \LogicException implements Logic
 {
 
 }

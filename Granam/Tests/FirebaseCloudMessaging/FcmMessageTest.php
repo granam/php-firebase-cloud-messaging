@@ -1,8 +1,9 @@
 <?php
-namespace sngrl\Granam\Tests;
+namespace Granam\Tests\FirebaseCloudMessaging;
 
 use Granam\FirebaseCloudMessaging\FcmMessage;
 use Granam\FirebaseCloudMessaging\FcmNotification;
+use Granam\FirebaseCloudMessaging\JsFcmNotification;
 use Granam\FirebaseCloudMessaging\Target\FcmDeviceTarget;
 use Granam\FirebaseCloudMessaging\Target\FcmTopicTarget;
 use Granam\Tests\Tools\TestWithMockery;
@@ -39,7 +40,7 @@ class FcmMessageTest extends TestWithMockery
         $body = '{"to":"\/topics\/breaking-news","notification":{"title":"test","body":"a nice testing notification"}}';
 
         $message = new FcmMessage(new FcmTopicTarget('breaking-news'));
-        $message->setNotification(new FcmNotification('test', 'a nice testing notification'));
+        $message->setNotification(new JsFcmNotification('test', 'a nice testing notification'));
         $this->assertSame($body, \json_encode($message));
     }
 
@@ -48,7 +49,7 @@ class FcmMessageTest extends TestWithMockery
      */
     public function I_can_simply_convert_whole_message_for_device_to_json(): void
     {
-        $notification = new FcmNotification('test', 'a nice testing notification');
+        $notification = new JsFcmNotification('test', 'a nice testing notification');
         $message = new FcmMessage(new FcmDeviceTarget('deviceId'));
         $message->setNotification($notification);
 

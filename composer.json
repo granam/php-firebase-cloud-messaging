@@ -26,15 +26,15 @@
   ],
   "require": {
     "php": ">=7.1",
-    "roave/security-advisories": "dev-master",
     "guzzlehttp/guzzle": "^6.3",
-    "granam/strict-object": "^3.0",
-    "granam/tools": "^2.0"
+    "granam/strict-object": "^3.0"
   },
   "require-dev": {
+    "roave/security-advisories": "dev-master",
     "phpunit/phpunit": "^7.0",
     "mockery/mockery": "^1.0",
-    "granam/exceptions-hierarchy": "^4.0"
+    "granam/exceptions-hierarchy": "^4.0",
+    "granam/string": "^2.2"
   },
   "autoload": {
     "psr-4": {

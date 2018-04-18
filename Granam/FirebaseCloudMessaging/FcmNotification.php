@@ -4,144 +4,66 @@ declare(strict_types=1);
 
 namespace Granam\FirebaseCloudMessaging;
 
+use Granam\Strict\Object\StrictObject;
+
 /**
  * @link https://firebase.google.com/docs/cloud-messaging/http-server-ref#notification-payload-support
  */
-class FcmNotification extends FcmMessage
+abstract class FcmNotification extends StrictObject implements \JsonSerializable
 {
-    private $title;
-    private $body;
-    private $iosBadge;
-    private $androidIcon;
-    private $sound;
-    private $clickAction;
-    private $tag;
-    private $contentAvailable;
-    private $androidBackgroundColor = '';
+    /** @var string */
+    protected $title;
+    /** @var string */
+    protected $body;
+    /** @var string */
+    protected $clickAction;
 
-    /** @noinspection PhpMissingParentConstructorInspection */
-    /** @noinspection MagicMethodsValidityInspection */
     /**
-     * @var string $title,
-     * @var string $body,
-     * @var string $sound = '',
-     * @var string $clickAction = '',
-     * @var string $tag = '',
-     * @var bool $contentAvailable = null,
-     * @var int $iosBadge = 0,
-     * @var string $androidIcon = ''
+     * @param string $title The notification's title.
+     * @param string $body The notification's body text.
+     * @param string $clickAction The action associated with a user click on the notification.
      */
     public function __construct(
-        string $title,
-        string $body,
-        string $sound = '',
-        string $clickAction = '',
-        string $tag = '',
-        bool $contentAvailable = null,
-        int $iosBadge = 0,
-        string $androidIcon = ''
+        string $title = '',
+        string $body = '',
+        string $clickAction = ''
     )
     {
         $this->title = $title;
         $this->body = $body;
-        $this->sound = $sound;
         $this->clickAction = $clickAction;
-        $this->tag = $tag;
-        $this->contentAvailable = $contentAvailable;
-        $this->iosBadge = $iosBadge;
-        $this->androidIcon = $androidIcon;
     }
 
     /**
-     * iOS only, will add small red bubbles indicating the number of notifications to your apps icon
-     *
-     * @param integer $iosBadge
-     * @return $this
+     * @param string $title
      */
-    public function setIosBadge(int $iosBadge): FcmNotification
+    public function setTitle(string $title): void
     {
-        $this->iosBadge = $iosBadge;
-
-        return $this;
+        $this->title = $title;
     }
 
     /**
-     * Android only, set the name of your drawable resource as string
-     *
-     * @param string $androidIcon
-     * @return $this
+     * @param string $body
      */
-    public function setAndroidIcon(string $androidIcon): FcmNotification
+    public function setBody(string $body): void
     {
-        $this->androidIcon = $androidIcon;
-
-        return $this;
-    }
-
-    public function setClickAction(string $actionName): FcmNotification
-    {
-        $this->clickAction = $actionName;
-
-        return $this;
-    }
-
-    public function setSound(string $sound): FcmNotification
-    {
-        $this->sound = $sound;
-
-        return $this;
-    }
-
-    public function setTag(string $tag): FcmNotification
-    {
-        $this->tag = $tag;
-
-        return $this;
-    }
-
-    public function enableContentAvailable(): FcmNotification
-    {
-        $this->contentAvailable = true;
-
-        return $this;
-    }
-
-    public function disableContentAvailable(): FcmNotification
-    {
-        $this->contentAvailable = true;
-
-        return $this;
+        $this->body = $body;
     }
 
     /**
-     * Android only, set the notification's icon color, expressed in #rrggbb format.
-     *
-     * @param string $androidBackgroundColor
-     * @return $this
-     * @throws \Granam\FirebaseCloudMessaging\Exceptions\InvalidRgbFormatOfBackgroundColor
+     * @param string $clickAction
      */
-    public function setAndroidBackgroundColor(string $androidBackgroundColor): FcmMessage
+    public function setClickAction(string $clickAction): void
     {
-        if ($androidBackgroundColor !== '' && !\preg_match('~^#[0-9a-fA-F]{6}$~', $androidBackgroundColor)) {
-            throw new Exceptions\InvalidRgbFormatOfBackgroundColor(
-                "Expected something like '#6563a4', got '{$androidBackgroundColor}'"
-            );
-        }
-        $this->androidBackgroundColor = $androidBackgroundColor;
-
-        return $this;
+        $this->clickAction = $clickAction;
     }
 
     /**
-     * @return array
-     * @throws \Granam\FirebaseCloudMessaging\Exceptions\ExceededLimitOfTopics
-     * @throws \Granam\FirebaseCloudMessaging\Exceptions\MissingMultipleTopicsCondition
-     * @throws \Granam\FirebaseCloudMessaging\Exceptions\CountOfTopicsDoesNotMatchConditionPattern
-     * @throws \Granam\FirebaseCloudMessaging\Exceptions\ExceededLimitOfDevices
+     * @return array|string[]
      */
     public function jsonSerialize(): array
     {
-        $jsonData = $this->getJsonData();
+        $jsonData = [];
         if ($this->title !== '') {
             $jsonData['title'] = $this->title;
         }
@@ -151,25 +73,8 @@ class FcmNotification extends FcmMessage
         if ($this->clickAction !== '') {
             $jsonData['click_action'] = $this->clickAction;
         }
-        if ($this->sound !== '') {
-            $jsonData['sound'] = $this->sound;
-        }
-        if ($this->tag !== '') {
-            $jsonData['tag'] = $this->tag;
-        }
-        if ($this->contentAvailable !== null) {
-            $jsonData['content_available'] = $this->contentAvailable;
-        }
-        if ($this->iosBadge > 0) {
-            $jsonData['badge'] = $this->iosBadge;
-        }
-        if ($this->androidIcon !== '') {
-            $jsonData['icon'] = $this->androidIcon;
-        }
-        if ($this->androidBackgroundColor !== '') {
-            $jsonData['color'] = $this->androidBackgroundColor;
-        }
 
         return $jsonData;
     }
+
 }
