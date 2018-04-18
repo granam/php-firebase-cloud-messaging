@@ -24,7 +24,7 @@ class FcmMessage implements \JsonSerializable
     private $targets = [];
     private $targetType;
     private $condition;
-    private $ttl;
+    private $timeToLive;
     private $delayWhileIdle;
 
     /**
@@ -157,14 +157,14 @@ class FcmMessage implements \JsonSerializable
 
     public function disableDelayWhileIdle(): FcmMessage
     {
-        $this->delayWhileIdle = true;
+        $this->delayWhileIdle = false;
 
         return $this;
     }
 
-    public function setTimeToLive(int $ttl): FcmMessage
+    public function setTimeToLive(int $timeToLive): FcmMessage
     {
-        $this->ttl = $ttl;
+        $this->timeToLive = $timeToLive;
 
         return $this;
     }
@@ -189,8 +189,8 @@ class FcmMessage implements \JsonSerializable
         if ($this->priority) {
             $jsonData['priority'] = $this->priority;
         }
-        if ($this->notification) {
-            $jsonData['notification'] = $this->notification;
+        if ($this->getNotification()) {
+            $jsonData['notification'] = $this->getNotification();
         }
 
         return $jsonData;
@@ -199,8 +199,8 @@ class FcmMessage implements \JsonSerializable
     protected function getJsonData(): array
     {
         $jsonData = [];
-        if ($this->ttl) {
-            $jsonData['time_to_live'] = $this->ttl;
+        if ($this->timeToLive) {
+            $jsonData['time_to_live'] = $this->timeToLive;
         }
         if ($this->delayWhileIdle !== null) {
             $jsonData['delay_while_idle'] = $this->delayWhileIdle;

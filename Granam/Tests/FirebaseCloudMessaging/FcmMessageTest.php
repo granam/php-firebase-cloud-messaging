@@ -130,4 +130,17 @@ class FcmMessageTest extends TestWithMockery
         self::assertSame(['registration_ids' => ['foo', 'bar', 'baz']], $message->jsonSerialize()); // even more device targets
     }
 
+    /**
+     * @test
+     */
+    public function I_can_set_delay_while_idle(): void
+    {
+        $message = new FcmMessage(new FcmDeviceTarget('foo'));
+        self::assertSame(['to' => 'foo'], $message->jsonSerialize());
+        $message->enableDelayWhileIdle();
+        self::assertSame(['delay_while_idle' => true, 'to' => 'foo'], $message->jsonSerialize());
+        $message->disableDelayWhileIdle();
+        self::assertSame(['delay_while_idle' => false, 'to' => 'foo'], $message->jsonSerialize());
+    }
+
 }
