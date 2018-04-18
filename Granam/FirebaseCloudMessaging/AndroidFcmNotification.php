@@ -130,6 +130,15 @@ class AndroidFcmNotification extends DeviceFcmNotification
     }
 
     /**
+     * Android show the push notification to user if title or body is set and does NOT pass it to the app, as does otherwise.
+     * @return bool
+     */
+    public function isSilent(): bool
+    {
+        return $this->title === '' && $this->body === '';
+    }
+
+    /**
      * @return array
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\ExceededLimitOfTopics
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\MissingMultipleTopicsCondition

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Granam\Tests\FirebaseCloudMessaging;
 
-class IosFcmNotificationTest extends FcmNotificationTest
+use Granam\FirebaseCloudMessaging\IosFcmNotification;
+
+class IosFcmNotificationTest extends DeviceFcmNotificationTest
 {
     /**
      * @test
@@ -23,4 +25,36 @@ class IosFcmNotificationTest extends FcmNotificationTest
     {
         $this->I_can_set_parameter('subTitle', 'bar');
     }
+
+    /**
+     * @test
+     */
+    public function I_can_ask_it_if_is_silent(): void
+    {
+        $iosFcmNotification = new IosFcmNotification();
+        self::assertFalse($iosFcmNotification->isSilent(), 'iOS pusp notification should not be silent by default');
+        $iosFcmNotification->setSilent(true);
+        self::assertTrue($iosFcmNotification->isSilent(), 'Could not set iOS push notification as silent');
+        $iosFcmNotification->setSilent(false);
+        self::assertFalse($iosFcmNotification->isSilent(), 'Could not set iOS push notification as not silent');
+    }
+
+    /**
+     * @test
+     */
+    public function I_have_got_badge_and_sound_removed_if_set_as_silent(): void
+    {
+        $iosFcmNotification = new IosFcmNotification();
+        self::assertSame([], $iosFcmNotification->jsonSerialize());
+        $iosFcmNotification->setBadge(123);
+        self::assertSame(['badge' => 123], $iosFcmNotification->jsonSerialize());
+        $iosFcmNotification->setSilent(true);
+        self::assertSame(['content-available' => 1], $iosFcmNotification->jsonSerialize());
+        $iosFcmNotification->setSilent(false);
+        $iosFcmNotification->setSound('default');
+        self::assertSame(['sound' => 'default', 'badge' => 123], $iosFcmNotification->jsonSerialize());
+        $iosFcmNotification->setSilent(true);
+        self::assertSame(['content-available' => 1], $iosFcmNotification->jsonSerialize());
+    }
+
 }

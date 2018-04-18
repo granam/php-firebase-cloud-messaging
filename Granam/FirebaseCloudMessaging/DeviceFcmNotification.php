@@ -93,6 +93,11 @@ abstract class DeviceFcmNotification extends FcmNotification
     }
 
     /**
+     * @return bool
+     */
+    abstract public function isSilent(): bool;
+
+    /**
      * @return array
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\ExceededLimitOfTopics
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\MissingMultipleTopicsCondition

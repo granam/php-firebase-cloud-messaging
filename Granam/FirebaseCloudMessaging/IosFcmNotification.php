@@ -13,6 +13,8 @@ class IosFcmNotification extends DeviceFcmNotification
     private $badge;
     /** @var string */
     private $subTitle;
+    /** @var bool */
+    private $silent;
 
     /**
      * @var string $title = '' The notification's title. This field is not visible on iOS phones and tablets.
@@ -24,6 +26,7 @@ class IosFcmNotification extends DeviceFcmNotification
      * If set to 0, the badge is removed.
      * @var string $clickAction = '' The action associated with a user click on the notification. Corresponds to category in the APNs payload.
      * @var string $subTitle = '' The notification's subtitle.
+     * @var bool $silent = false Removes sound, badge and sends content-available as 1
      * @var string $bodyLocKey = '' The key to the body string in the app's string resources to use to localize the body text to the user's current localization.
      * Corresponds to loc-key in the APNs payload.
      * @var array|string[] $bodyLocArgs = array Variable string values to be used in place of the format specifiers in body_loc_key to use to localize the body text to the user's current localization.
@@ -39,6 +42,7 @@ class IosFcmNotification extends DeviceFcmNotification
         int $badge = null,
         string $clickAction = '',
         string $subTitle = '',
+        bool $silent = false,
         string $bodyLocKey = '',
         array $bodyLocArgs = [],
         string $titleLocKey = '',
@@ -48,24 +52,52 @@ class IosFcmNotification extends DeviceFcmNotification
         parent::__construct($title, $body, $sound, $clickAction, $bodyLocKey, $bodyLocArgs, $titleLocKey, $titleLocArgs);
         $this->badge = $badge;
         $this->subTitle = $subTitle;
+        $this->silent = $silent;
     }
 
     /**
      * The value of the badge on the home screen app icon. If not specified (null), the badge is not changed.
      * If set to 0, the badge is removed.
      * @param int $badge
+     * @return IosFcmNotification
      */
-    public function setBadge(int $badge = null): void
+    public function setBadge(int $badge = null): IosFcmNotification
     {
         $this->badge = $badge;
+
+        return $this;
     }
 
     /**
+     * The notification's subtitle.
      * @param string $subTitle
+     * @return IosFcmNotification
      */
-    public function setSubTitle(string $subTitle): void
+    public function setSubTitle(string $subTitle): IosFcmNotification
     {
         $this->subTitle = $subTitle;
+
+        return $this;
+    }
+
+    /**
+     * Removes sound, badge and sends content-available as 1
+     * @param bool $silent
+     * @return IosFcmNotification
+     */
+    public function setSilent(bool $silent): IosFcmNotification
+    {
+        $this->silent = $silent;
+
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isSilent(): bool
+    {
+        return $this->silent;
     }
 
     /**
@@ -78,7 +110,10 @@ class IosFcmNotification extends DeviceFcmNotification
     public function jsonSerialize(): array
     {
         $jsonData = parent::jsonSerialize();
-        if ($this->badge !== null) {
+        if ($this->silent) {
+            $jsonData['content-available'] = 1;
+            unset($jsonData['sound']);
+        } elseif ($this->badge !== null) {
             $jsonData['badge'] = $this->badge;
         }
         if ($this->subTitle !== '') {
