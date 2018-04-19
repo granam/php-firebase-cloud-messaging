@@ -63,6 +63,32 @@ class JsFcmNotification extends FcmNotification
         $this->icon = $icon;
     }
 
+    public function isSilent(): bool
+    {
+        return false;
+    }
+
+    /**
+     * If your web / js app is in background, than using JsFcmNotification for FcmMessage will display that notification.
+     * If you want to sent some data silently, do not use JsFcmNotification at all, only @see FcmMessage.
+     * @return bool
+     */
+    public function canBeSilenced(): bool
+    {
+        return false;
+    }
+
+    /**
+     * @throws \Granam\FirebaseCloudMessaging\Exceptions\JsFcmNotificationCanNotBeSilenced
+     */
+    public function setSilent()
+    {
+        throw new Exceptions\JsFcmNotificationCanNotBeSilenced(
+            'Whenever an JS notification is used and the app is in background, then notification is not silent, but shown to the user.'
+            . ' Just send ' . FcmMessage::class . ' without ' . static::class
+        );
+    }
+
     /**
      * @return array
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\ExceededLimitOfTopics

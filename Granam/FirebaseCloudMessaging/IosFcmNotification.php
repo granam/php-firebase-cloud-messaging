@@ -82,12 +82,11 @@ class IosFcmNotification extends DeviceFcmNotification
 
     /**
      * Removes sound, badge and sends content-available as 1
-     * @param bool $silent
      * @return IosFcmNotification
      */
-    public function setSilent(bool $silent): IosFcmNotification
+    public function setSilent(): IosFcmNotification
     {
-        $this->silent = $silent;
+        $this->silent = true;
 
         return $this;
     }
@@ -98,6 +97,11 @@ class IosFcmNotification extends DeviceFcmNotification
     public function isSilent(): bool
     {
         return $this->silent;
+    }
+
+    public function canBeSilenced(): bool
+    {
+        return true;
     }
 
     /**

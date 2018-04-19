@@ -60,15 +60,25 @@ class AndroidFcmNotificationTest extends DeviceFcmNotificationTest
     public function I_can_ask_it_if_is_silent(): void
     {
         $androidFcmNotification = new AndroidFcmNotification();
-        self::assertTrue($androidFcmNotification->isSilent(), 'Android push notification should be silent if without title and body');
-        $androidFcmNotification->setTitle('foo');
-        self::assertFalse($androidFcmNotification->isSilent(), 'Android push notification should not be silent if title is set');
-        $androidFcmNotification->setBody('bar');
-        self::assertFalse($androidFcmNotification->isSilent(), 'Android push notification should not be silent if title or body is set');
-        $androidFcmNotification->setTitle('');
-        self::assertFalse($androidFcmNotification->isSilent(), 'Android push notification should not be silent if body is set');
-        $androidFcmNotification->setBody('');
-        self::assertTrue($androidFcmNotification->isSilent(), 'Android push notification should be silent if without title and body');
+        self::assertFalse($androidFcmNotification->isSilent(), 'Android push notification can not be silent');
     }
 
+    /**
+     * @test
+     */
+    public function I_can_ask_it_if_can_be_silenced(): void
+    {
+        $androidFcmNotification = new AndroidFcmNotification();
+        self::assertFalse($androidFcmNotification->canBeSilenced(), 'Android push notification can not be silent');
+    }
+
+    /**
+     * @test
+     * @expectedException \Granam\FirebaseCloudMessaging\Exceptions\AndroidFcmNotificationCanNotBeSilenced
+     */
+    public function I_can_set_it_silent(): void
+    {
+        $androidFcmNotification = new AndroidFcmNotification();
+        $androidFcmNotification->setSilent();
+    }
 }

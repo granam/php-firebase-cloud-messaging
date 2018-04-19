@@ -29,32 +29,45 @@ class IosFcmNotificationTest extends DeviceFcmNotificationTest
     /**
      * @test
      */
-    public function I_can_ask_it_if_is_silent(): void
-    {
-        $iosFcmNotification = new IosFcmNotification();
-        self::assertFalse($iosFcmNotification->isSilent(), 'iOS pusp notification should not be silent by default');
-        $iosFcmNotification->setSilent(true);
-        self::assertTrue($iosFcmNotification->isSilent(), 'Could not set iOS push notification as silent');
-        $iosFcmNotification->setSilent(false);
-        self::assertFalse($iosFcmNotification->isSilent(), 'Could not set iOS push notification as not silent');
-    }
-
-    /**
-     * @test
-     */
     public function I_have_got_badge_and_sound_removed_if_set_as_silent(): void
     {
         $iosFcmNotification = new IosFcmNotification();
         self::assertSame([], $iosFcmNotification->jsonSerialize());
         $iosFcmNotification->setBadge(123);
         self::assertSame(['badge' => 123], $iosFcmNotification->jsonSerialize());
-        $iosFcmNotification->setSilent(true);
-        self::assertSame(['content-available' => 1], $iosFcmNotification->jsonSerialize());
-        $iosFcmNotification->setSilent(false);
         $iosFcmNotification->setSound('default');
         self::assertSame(['sound' => 'default', 'badge' => 123], $iosFcmNotification->jsonSerialize());
-        $iosFcmNotification->setSilent(true);
+        $iosFcmNotification->setSilent();
         self::assertSame(['content-available' => 1], $iosFcmNotification->jsonSerialize());
+    }
+
+    /**
+     * @test
+     */
+    public function I_can_ask_it_if_is_silent(): void
+    {
+        $iosFcmNotification = new IosFcmNotification();
+        self::assertFalse($iosFcmNotification->isSilent(), 'iOS push notification should not be silent by default');
+    }
+
+    /**
+     * @test
+     */
+    public function I_can_ask_it_if_can_be_silenced(): void
+    {
+        $iosFcmNotification = new IosFcmNotification();
+        self::assertTrue($iosFcmNotification->canBeSilenced(), 'iOS notification can be silenced');
+    }
+
+    /**
+     * @test
+     */
+    public function I_can_set_it_silent(): void
+    {
+        $iosFcmNotification = new IosFcmNotification();
+        self::assertFalse($iosFcmNotification->isSilent());
+        $iosFcmNotification->setSilent();
+        self::assertTrue($iosFcmNotification->isSilent(), 'iOS notification should be able to be silenced');
     }
 
 }

@@ -45,4 +45,33 @@ class JsFcmNotificationTest extends FcmNotificationTest
         }
         $this->I_can_set_parameter('clickAction', 'http://example.com/?action=go_to_bed');
     }
+
+    /**
+     * @test
+     */
+    public function I_can_ask_it_if_is_silent(): void
+    {
+        $jsFcmNotification = new JsFcmNotification();
+        self::assertFalse($jsFcmNotification->isSilent(), 'JS notification can not be silent (when app is no background)');
+    }
+
+    /**
+     * @test
+     */
+    public function I_can_ask_it_if_can_be_silenced(): void
+    {
+        $jsFcmNotification = new JsFcmNotification();
+        self::assertFalse($jsFcmNotification->canBeSilenced(), 'JS notification can not be silenced');
+    }
+
+    /**
+     * @test
+     * @expectedException \Granam\FirebaseCloudMessaging\Exceptions\JsFcmNotificationCanNotBeSilenced
+     */
+    public function I_can_set_it_silent(): void
+    {
+        $jsFcmNotification = new JsFcmNotification();
+        $jsFcmNotification->setSilent();
+    }
+
 }

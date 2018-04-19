@@ -130,12 +130,36 @@ class AndroidFcmNotification extends DeviceFcmNotification
     }
 
     /**
-     * Android show the push notification to user if title or body is set and does NOT pass it to the app, as does otherwise.
+     * An Android push message with 'notification' is NOT silent.
+     * https://stackoverflow.com/questions/36555653/push-silent-notification-through-gcm-to-android-ios
+     *
      * @return bool
      */
     public function isSilent(): bool
     {
-        return $this->title === '' && $this->body === '';
+        return false;
+    }
+
+    /**
+     * An Android push message with 'notification' is NOT silent.
+     * https://stackoverflow.com/questions/36555653/push-silent-notification-through-gcm-to-android-ios
+     *
+     * @return bool
+     */
+    public function canBeSilenced(): bool
+    {
+        return false;
+    }
+
+    /**
+     * @throws \Granam\FirebaseCloudMessaging\Exceptions\AndroidFcmNotificationCanNotBeSilenced
+     */
+    public function setSilent()
+    {
+        throw new Exceptions\AndroidFcmNotificationCanNotBeSilenced(
+            'Whenever an Android notification is used, then notification is not silent, but shown to the user.'
+            . ' Just send ' . FcmMessage::class . ' without ' . static::class
+        );
     }
 
     /**
