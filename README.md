@@ -32,6 +32,27 @@ $responseFromTopic = $client->send($messageForTopic);
 var_dump($responseFromTopic);
 ```
 
+## Send silent push notification to a device
+
+*App will have to process the notification by its own as system will not show it.*
+
+```php
+<?php
+use granam\FirebaseCloudMessaging\FcmClient;
+use granam\FirebaseCloudMessaging\FcmMessage;
+use granam\FirebaseCloudMessaging\Target\FcmDeviceTarget;
+
+$client = new FcmClient(new \GuzzleHttp\Client(), '_YOUR_SERVER_KEY_');
+$message = new FcmMessage(new FcmDeviceTarget('_YOUR_DEVICE_TOKEN_'));
+$message->setData([
+        'title' => 'A message from Foo!',
+        'message' => 'Hi Bar, how are you?',
+        'photo' => 'https://example.com/photos/Foo.png'
+    ]);
+$response = $client->send($message);
+var_dump($response);
+```
+
 ## Send message to multiple Devices
 
 ```php
