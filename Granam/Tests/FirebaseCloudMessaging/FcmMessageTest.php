@@ -141,9 +141,9 @@ class FcmMessageTest extends TestWithMockery
         $message = new FcmMessage(new FcmDeviceTarget('foo'));
         self::assertSame(['to' => 'foo'], $message->jsonSerialize());
         $message->enableDelayWhileIdle();
-        self::assertSame(['delay_while_idle' => true, 'to' => 'foo'], $message->jsonSerialize());
+        self::assertSame(['to' => 'foo', 'delay_while_idle' => true], $message->jsonSerialize());
         $message->disableDelayWhileIdle();
-        self::assertSame(['delay_while_idle' => false, 'to' => 'foo'], $message->jsonSerialize());
+        self::assertSame(['to' => 'foo', 'delay_while_idle' => false], $message->jsonSerialize());
     }
 
     /**
@@ -212,7 +212,7 @@ class FcmMessageTest extends TestWithMockery
     {
         $message = new FcmMessage(new FcmDeviceTarget('foo'));
         $message->setTimeToLive(123);
-        self::assertSame(['time_to_live' => 123, 'to' => 'foo'], $message->jsonSerialize());
+        self::assertSame(['to' => 'foo', 'time_to_live' => 123], $message->jsonSerialize());
     }
 
     /**

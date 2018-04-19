@@ -68,11 +68,11 @@ class FcmMessage implements \JsonSerializable
                 'Message device limit exceeded. Firebase supports a maximum of ' . self::MAX_DEVICES . ' devices'
             );
         }
-        if (\is_a($target, FcmTopicTarget::class) && \count($this->targets) === self::MAX_TOPICS){
+        if (\is_a($target, FcmTopicTarget::class) && \count($this->targets) === self::MAX_TOPICS) {
             throw new Exceptions\ExceededLimitOfTopics(
                 'Message topic limit exceeded. Firebase supports a maximum of ' . self::MAX_TOPICS
             );
-    }
+        }
         $this->targetType = $givenTargetType;
         $this->targets[] = $target;
 
@@ -183,9 +183,14 @@ class FcmMessage implements \JsonSerializable
      */
     public function jsonSerialize(): array
     {
-        $jsonData = $this->getJsonData();
-        ['value' => $target, 'key' => $targetKey] = $this->createTargetForJson();
-        $jsonData[$targetKey] = $target;
+        ['targetValue' => $target, 'targetKey' => $targetKey] = $this->createTargetForJson();
+        $jsonData = [$targetKey => $target];
+        if ($this->timeToLive) {
+            $jsonData['time_to_live'] = $this->timeToLive;
+        }
+        if ($this->delayWhileIdle !== null) {
+            $jsonData['delay_while_idle'] = $this->delayWhileIdle;
+        }
         if ($this->collapseKey !== '') {
             $jsonData['collapse_key'] = $this->collapseKey;
         }
@@ -197,19 +202,6 @@ class FcmMessage implements \JsonSerializable
         }
         if ($this->getNotification()) {
             $jsonData['notification'] = $this->getNotification();
-        }
-
-        return $jsonData;
-    }
-
-    protected function getJsonData(): array
-    {
-        $jsonData = [];
-        if ($this->timeToLive) {
-            $jsonData['time_to_live'] = $this->timeToLive;
-        }
-        if ($this->delayWhileIdle !== null) {
-            $jsonData['delay_while_idle'] = $this->delayWhileIdle;
         }
 
         return $jsonData;
@@ -241,7 +233,7 @@ class FcmMessage implements \JsonSerializable
             /** @var FcmTopicTarget $target */
             $target = \current($this->targets);
 
-            return ['value' => '/topics/' . $target->getTopicName(), 'key' => 'to'];
+            return ['targetValue' => '/topics/' . $target->getTopicName(), 'targetKey' => 'to'];
         }
         if (!$this->condition) {
             throw new Exceptions\MissingMultipleTopicsCondition(
@@ -261,7 +253,7 @@ class FcmMessage implements \JsonSerializable
             $names[] = "'{$target->getTopicName()}' in topics";
         }
 
-        return ['value' => \vsprintf($this->condition, $names), 'key' => 'condition'];
+        return ['targetValue' => \vsprintf($this->condition, $names), 'targetKey' => 'condition'];
     }
 
     /**
@@ -274,7 +266,7 @@ class FcmMessage implements \JsonSerializable
             /** @var FcmDeviceTarget $device */
             $device = \current($this->targets);
 
-            return ['value' => $device->getDeviceToken(), 'key' => 'to'];
+            return ['targetValue' => $device->getDeviceToken(), 'targetKey' => 'to'];
         }
         $deviceTokens = [];
         /** @var FcmDeviceTarget $target */
@@ -282,6 +274,6 @@ class FcmMessage implements \JsonSerializable
             $deviceTokens[] = $target->getDeviceToken();
         }
 
-        return ['value' => $deviceTokens, 'key' => 'registration_ids'];
+        return ['targetValue' => $deviceTokens, 'targetKey' => 'registration_ids'];
     }
 }
