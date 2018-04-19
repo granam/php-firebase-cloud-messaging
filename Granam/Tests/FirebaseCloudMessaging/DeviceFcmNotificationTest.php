@@ -3,8 +3,6 @@ namespace Granam\Tests\FirebaseCloudMessaging;
 
 abstract class DeviceFcmNotificationTest extends FcmNotificationTest
 {
-    abstract public function I_can_ask_it_if_is_silent();
-
     /**
      * @test
      * @throws \ReflectionException

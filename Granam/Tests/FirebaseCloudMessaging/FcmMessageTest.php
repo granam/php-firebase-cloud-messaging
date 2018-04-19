@@ -1,8 +1,10 @@
 <?php
 namespace Granam\Tests\FirebaseCloudMessaging;
 
+use Granam\FirebaseCloudMessaging\AndroidFcmNotification;
 use Granam\FirebaseCloudMessaging\FcmMessage;
 use Granam\FirebaseCloudMessaging\FcmNotification;
+use Granam\FirebaseCloudMessaging\IosFcmNotification;
 use Granam\FirebaseCloudMessaging\JsFcmNotification;
 use Granam\FirebaseCloudMessaging\Target\FcmDeviceTarget;
 use Granam\FirebaseCloudMessaging\Target\FcmTarget;
@@ -67,6 +69,58 @@ class FcmMessageTest extends TestWithMockery
         self::assertNull($message->getNotification());
         $message->setNotification($notification = $this->createNotification());
         self::assertSame($notification, $message->getNotification());
+    }
+
+    /**
+     * @test
+     */
+    public function I_can_set_notification_when_message_is_silent(): void
+    {
+        $message = new FcmMessage(new FcmDeviceTarget('123'));
+        $message->setSilent()
+            ->setNotification(new IosFcmNotification('foo'));
+        self::assertSame(
+            ['to' => '123', 'notification' => ['title' => 'foo', 'content-available' => 1]],
+            $message->jsonSerialize()
+        );
+    }
+
+    /**
+     * @test
+     */
+    public function I_can_set_message_silent_when_contains_silenceable_notification(): void
+    {
+        $message = new FcmMessage(new FcmDeviceTarget('123'));
+        $message
+            ->setNotification(new IosFcmNotification('foo'))
+            ->setSilent();
+        self::assertSame(
+            ['to' => '123', 'notification' => ['title' => 'foo', 'content-available' => 1]],
+            $message->jsonSerialize()
+        );
+    }
+
+    /**
+     * @test
+     * @expectedException \Granam\FirebaseCloudMessaging\Exceptions\CanNotMakeSilentMessageWithLoudNotification
+     */
+    public function I_can_not_set_loud_notification_when_message_is_silent(): void
+    {
+        $message = new FcmMessage(new FcmDeviceTarget('123'));
+        $message->setSilent()
+            ->setNotification(new AndroidFcmNotification());
+    }
+
+    /**
+     * @test
+     * @expectedException \Granam\FirebaseCloudMessaging\Exceptions\CanNotMakeSilentMessageWithLoudNotification
+     */
+    public function I_can_not_set_message_silent_when_has_loud_notification(): void
+    {
+        $message = new FcmMessage(new FcmDeviceTarget('123'));
+        $message
+            ->setNotification(new AndroidFcmNotification())
+            ->setSilent();
     }
 
     /**

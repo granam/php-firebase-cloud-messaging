@@ -7,6 +7,12 @@ use Granam\Tests\Tools\TestWithMockery;
 
 abstract class FcmNotificationTest extends TestWithMockery
 {
+    abstract public function I_can_ask_it_if_is_silent();
+
+    abstract public function I_can_ask_it_if_can_be_silenced();
+
+    abstract public function I_can_set_it_silent();
+
     /**
      * @test
      */

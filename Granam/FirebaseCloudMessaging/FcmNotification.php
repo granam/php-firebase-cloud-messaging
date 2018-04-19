@@ -58,6 +58,12 @@ abstract class FcmNotification extends StrictObject implements \JsonSerializable
         $this->clickAction = $clickAction;
     }
 
+    abstract public function isSilent(): bool;
+
+    abstract public function canBeSilenced(): bool;
+
+    abstract public function setSilent();
+
     /**
      * @return array|string[]
      */

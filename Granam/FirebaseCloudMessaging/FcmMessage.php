@@ -26,6 +26,7 @@ class FcmMessage implements \JsonSerializable
     private $condition;
     private $timeToLive;
     private $delayWhileIdle;
+    private $silent = false;
 
     /**
      * @param FcmTarget $target
@@ -93,8 +94,16 @@ class FcmMessage implements \JsonSerializable
         }
     }
 
+    /**
+     * @throws \Granam\FirebaseCloudMessaging\Exceptions\CanNotMakeSilentMessageWithLoudNotification
+     * @param FcmNotification $notification
+     * @return FcmMessage
+     */
     public function setNotification(FcmNotification $notification): FcmMessage
     {
+        if ($this->silent) {
+            $this->setNotificationSilent($notification);
+        }
         $this->notification = $notification;
 
         return $this;
@@ -177,6 +186,39 @@ class FcmMessage implements \JsonSerializable
     }
 
     /**
+     * https://stackoverflow.com/questions/36555653/push-silent-notification-through-gcm-to-android-ios?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
+     *
+     * @return FcmMessage
+     * @throws \Granam\FirebaseCloudMessaging\Exceptions\CanNotMakeSilentMessageWithLoudNotification
+     */
+    public function setSilent(): FcmMessage
+    {
+        if ($this->getNotification()) {
+            $this->setNotificationSilent($this->getNotification());
+        }
+        $this->silent = true;
+
+        return $this;
+    }
+
+    /**
+     * @throws \Granam\FirebaseCloudMessaging\Exceptions\CanNotMakeSilentMessageWithLoudNotification
+     * @param FcmNotification $fcmNotification
+     */
+    private function setNotificationSilent(FcmNotification $fcmNotification): void
+    {
+        if (!$fcmNotification->isSilent()) {
+            if (!$fcmNotification->canBeSilenced()) {
+                throw new Exceptions\CanNotMakeSilentMessageWithLoudNotification(
+                    'Notification ' . \get_class($fcmNotification) . ' can not be silenced.'
+                    . ' Do not use ' . FcmNotification::class . ' at all, if you want just silent data transfer'
+                );
+            }
+            $fcmNotification->setSilent();
+        }
+    }
+
+    /**
      * @return array
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\MissingMultipleTopicsCondition
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\CountOfTopicsDoesNotMatchConditionPattern
@@ -201,7 +243,7 @@ class FcmMessage implements \JsonSerializable
             $jsonData['priority'] = $this->priority;
         }
         if ($this->getNotification()) {
-            $jsonData['notification'] = $this->getNotification();
+            $jsonData['notification'] = $this->getNotification()->jsonSerialize();
         }
 
         return $jsonData;
@@ -259,7 +301,8 @@ class FcmMessage implements \JsonSerializable
     /**
      * @return array|string[]|string[][]
      */
-    private function getDeviceTarget(): array
+    private
+    function getDeviceTarget(): array
     {
         $targetCounts = \count($this->targets);
         if ($targetCounts === 1) {
