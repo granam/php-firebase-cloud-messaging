@@ -3,6 +3,8 @@ namespace Granam\Tests\FirebaseCloudMessaging;
 
 abstract class DeviceFcmNotificationTest extends FcmNotificationTest
 {
+    abstract public function I_can_ask_it_if_is_silent();
+
     /**
      * @test
      * @throws \ReflectionException
@@ -12,5 +14,39 @@ abstract class DeviceFcmNotificationTest extends FcmNotificationTest
         $this->I_can_set_parameter('sound', 'foo');
     }
 
-    abstract public function I_can_ask_it_if_is_silent();
+    /**
+     * @test
+     * @throws \ReflectionException
+     */
+    public function I_can_set_body_loc_key(): void
+    {
+        $this->I_can_set_parameter('bodyLocKey', 'foo');
+    }
+
+    /**
+     * @test
+     * @throws \ReflectionException
+     */
+    public function I_can_set_body_loc_args(): void
+    {
+        $this->I_can_set_parameter('bodyLocArgs', ['foo', 'bar']);
+    }
+
+    /**
+     * @test
+     * @throws \ReflectionException
+     */
+    public function I_can_set_title_loc_key(): void
+    {
+        $this->I_can_set_parameter('titleLocKey', 'foo');
+    }
+
+    /**
+     * @test
+     * @throws \ReflectionException
+     */
+    public function I_can_set_title_loc_args(): void
+    {
+        $this->I_can_set_parameter('titleLocArgs', ['foo', 'bar', 123]);
+    }
 }

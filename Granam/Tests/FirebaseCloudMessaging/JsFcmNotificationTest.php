@@ -18,4 +18,31 @@ class JsFcmNotificationTest extends FcmNotificationTest
         $jsFcmNotification->setIcon('madona');
         self::assertSame(['icon' => 'madona'], $jsFcmNotification->jsonSerialize());
     }
+
+    /**
+     * @test
+     * @expectedException \Granam\FirebaseCloudMessaging\Exceptions\ClickActionForJavascriptFcmNotificationRequiresValidUrl
+     * @expectedExceptionMessageRegExp ~Go to bed~
+     * @throws \ReflectionException
+     */
+    public function I_can_not_use_invalid_url_for_click_action(): void
+    {
+        $this->I_can_set_parameter('clickAction', 'Go to bed');
+    }
+
+    /**
+     * @test
+     * @expectedException \Granam\FirebaseCloudMessaging\Exceptions\ClickActionForJavascriptFcmNotificationHasToBeOnHttps
+     * @expectedExceptionMessageRegExp ~http://~
+     * @throws \ReflectionException
+     */
+    public function I_have_to_use_url_with_https_for_click_action(): void
+    {
+        try {
+            $this->I_can_set_parameter('clickAction', 'https://example.com/?action=go_to_bed');
+        } catch (\Exception $exception) {
+            self::fail('No exception expected so far: ' . $exception->getMessage());
+        }
+        $this->I_can_set_parameter('clickAction', 'http://example.com/?action=go_to_bed');
+    }
 }

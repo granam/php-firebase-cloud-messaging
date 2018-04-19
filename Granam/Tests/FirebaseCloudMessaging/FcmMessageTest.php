@@ -5,6 +5,7 @@ use Granam\FirebaseCloudMessaging\FcmMessage;
 use Granam\FirebaseCloudMessaging\FcmNotification;
 use Granam\FirebaseCloudMessaging\JsFcmNotification;
 use Granam\FirebaseCloudMessaging\Target\FcmDeviceTarget;
+use Granam\FirebaseCloudMessaging\Target\FcmTarget;
 use Granam\FirebaseCloudMessaging\Target\FcmTopicTarget;
 use Granam\Tests\Tools\TestWithMockery;
 
@@ -97,10 +98,11 @@ class FcmMessageTest extends TestWithMockery
      */
     public function I_can_set_collapse_key_and_get_it_back(): void
     {
-        $message = new FcmMessage($this->createDeviceTarget());
+        $message = new FcmMessage(new FcmTopicTarget('qux'));
         self::assertSame('', $message->getCollapseKey());
         $message->setCollapseKey('foo');
         self::assertSame('foo', $message->getCollapseKey());
+        self::assertSame(['to' => '/topics/qux', 'collapse_key' => 'foo'], $message->jsonSerialize());
     }
 
     /**
@@ -144,4 +146,124 @@ class FcmMessageTest extends TestWithMockery
         self::assertSame(['delay_while_idle' => false, 'to' => 'foo'], $message->jsonSerialize());
     }
 
+    /**
+     * @test
+     * @expectedException \Granam\FirebaseCloudMessaging\Exceptions\UnknownTargetType
+     */
+    public function I_can_not_add_unknown_target_type(): void
+    {
+        $message = new FcmMessage(new FcmDeviceTarget('foo'));
+        /** @var FcmTarget $fcmTarget */
+        $fcmTarget = $this->mockery(FcmTarget::class);
+        $message->addTarget($fcmTarget);
+    }
+
+    /**
+     * @test
+     * @expectedException \Granam\FirebaseCloudMessaging\Exceptions\ExceededLimitOfDevices
+     */
+    public function I_can_not_add_more_than_allowed_targets(): void
+    {
+        $message = new FcmMessage($target = new FcmDeviceTarget('foo'));
+        try {
+            for ($number = 1; $number < FcmMessage::MAX_DEVICES; $number++) {
+                $message->addTarget($target);
+            }
+        } catch (\Exception $exception) {
+            self::fail('No exception expected so far: ' . $exception->getMessage());
+        }
+        $message->addTarget($target);
+    }
+
+    /**
+     * @test
+     */
+    public function I_can_ad_multiple_targets_at_once(): void
+    {
+        $message = new FcmMessage(new FcmDeviceTarget('foo'));
+        $message->addTargets([new FcmDeviceTarget('bar'), new FcmDeviceTarget('baz')]);
+        self::assertSame(['registration_ids' => ['foo', 'bar', 'baz']], $message->jsonSerialize());
+    }
+
+    /**
+     * @test
+     */
+    public function I_can_set_priority(): void
+    {
+        $message = new FcmMessage(new FcmDeviceTarget('foo'));
+        $message->setPriority('high');
+        self::assertSame(['to' => 'foo', 'priority' => 'high'], $message->jsonSerialize());
+    }
+
+    /**
+     * @test
+     */
+    public function I_can_set_data(): void
+    {
+        $message = new FcmMessage(new FcmDeviceTarget('foo'));
+        $message->setData(['bank', 'bang']);
+        self::assertSame(['to' => 'foo', 'data' => ['bank', 'bang']], $message->jsonSerialize());
+    }
+
+    /**
+     * @test
+     */
+    public function I_can_set_time_to_live(): void
+    {
+        $message = new FcmMessage(new FcmDeviceTarget('foo'));
+        $message->setTimeToLive(123);
+        self::assertSame(['time_to_live' => 123, 'to' => 'foo'], $message->jsonSerialize());
+    }
+
+    /**
+     * @test
+     * @expectedException \Granam\FirebaseCloudMessaging\Exceptions\ExceededLimitOfTopics
+     */
+    public function I_can_not_add_more_than_allowed_topic_targets(): void
+    {
+        $message = new FcmMessage(new FcmTopicTarget('foo'));
+        for ($number = 1; $number < FcmMessage::MAX_TOPICS; $number++) {
+            try {
+                $message->addTarget(new FcmTopicTarget('bar'));
+            } catch (\Exception $exception) {
+                self::fail('No exception expected so far: ' . $exception->getMessage());
+            }
+        }
+        $message->addTarget(new FcmTopicTarget('qux'));
+    }
+
+    /**
+     * @test
+     */
+    public function I_can_use_single_topic_target_even_if_condition_wants_more(): void
+    {
+        $message = new FcmMessage(new FcmTopicTarget('foo'));
+        $message->setCondition('%s || %s');
+        self::assertSame(['to' => '/topics/foo'], $message->jsonSerialize());
+    }
+
+    /**
+     * @test
+     * @expectedException \Granam\FirebaseCloudMessaging\Exceptions\CountOfTopicsDoesNotMatchConditionPattern
+     */
+    public function I_can_not_use_more_topic_targets_than_condition_requires(): void
+    {
+        $message = new FcmMessage(new FcmTopicTarget('foo'));
+        $message->addTarget(new FcmTopicTarget('bar'));
+        $message->addTarget(new FcmTopicTarget('baz'));
+        $message->setCondition('%s || %s');
+        $message->jsonSerialize();
+    }
+
+    /**
+     * @test
+     * @expectedException \Granam\FirebaseCloudMessaging\Exceptions\CountOfTopicsDoesNotMatchConditionPattern
+     */
+    public function I_can_not_use_less_topic_targets_than_condition_requires(): void
+    {
+        $message = new FcmMessage(new FcmTopicTarget('foo'));
+        $message->addTarget(new FcmTopicTarget('bar'));
+        $message->setCondition('%s || (%s && %s)');
+        $message->jsonSerialize();
+    }
 }
