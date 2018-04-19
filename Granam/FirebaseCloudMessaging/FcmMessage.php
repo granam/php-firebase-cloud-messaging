@@ -43,6 +43,7 @@ class FcmMessage implements \JsonSerializable
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\UnknownTargetType
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\CanNotMixRecipientTypes
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\ExceededLimitOfDevices
+     * @throws \Granam\FirebaseCloudMessaging\Exceptions\ExceededLimitOfTopics
      */
     public function addTarget(FcmTarget $target): FcmMessage
     {
@@ -62,11 +63,16 @@ class FcmMessage implements \JsonSerializable
                 . ", but currently given is '$givenTargetType'"
             );
         }
-        if (\is_a($target, FcmDeviceTarget::class) && (\count($this->targets) + 1) > self::MAX_DEVICES) {
+        if (\is_a($target, FcmDeviceTarget::class) && \count($this->targets) === self::MAX_DEVICES) {
             throw new Exceptions\ExceededLimitOfDevices(
                 'Message device limit exceeded. Firebase supports a maximum of ' . self::MAX_DEVICES . ' devices'
             );
         }
+        if (\is_a($target, FcmTopicTarget::class) && \count($this->targets) === self::MAX_TOPICS){
+            throw new Exceptions\ExceededLimitOfTopics(
+                'Message topic limit exceeded. Firebase supports a maximum of ' . self::MAX_TOPICS
+            );
+    }
         $this->targetType = $givenTargetType;
         $this->targets[] = $target;
 
@@ -78,6 +84,7 @@ class FcmMessage implements \JsonSerializable
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\UnknownTargetType
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\CanNotMixRecipientTypes
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\ExceededLimitOfDevices
+     * @throws \Granam\FirebaseCloudMessaging\Exceptions\ExceededLimitOfTopics
      */
     public function addTargets(array $targets): void
     {
@@ -171,7 +178,6 @@ class FcmMessage implements \JsonSerializable
 
     /**
      * @return array
-     * @throws \Granam\FirebaseCloudMessaging\Exceptions\ExceededLimitOfTopics
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\MissingMultipleTopicsCondition
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\CountOfTopicsDoesNotMatchConditionPattern
      */
@@ -211,7 +217,6 @@ class FcmMessage implements \JsonSerializable
 
     /**
      * @return array|string[]|string[][]
-     * @throws \Granam\FirebaseCloudMessaging\Exceptions\ExceededLimitOfTopics
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\MissingMultipleTopicsCondition
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\CountOfTopicsDoesNotMatchConditionPattern
      */
@@ -226,7 +231,6 @@ class FcmMessage implements \JsonSerializable
 
     /**
      * @return string[]|array
-     * @throws \Granam\FirebaseCloudMessaging\Exceptions\ExceededLimitOfTopics
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\MissingMultipleTopicsCondition
      * @throws \Granam\FirebaseCloudMessaging\Exceptions\CountOfTopicsDoesNotMatchConditionPattern
      */
@@ -238,12 +242,6 @@ class FcmMessage implements \JsonSerializable
             $target = \current($this->targets);
 
             return ['value' => '/topics/' . $target->getTopicName(), 'key' => 'to'];
-        }
-        if ($targetCounts > self::MAX_TOPICS) {
-            throw new Exceptions\ExceededLimitOfTopics(
-                'Message topic limit exceeded. Firebase supports a maximum of ' . self::MAX_TOPICS
-                . " topics for a single message, got {$targetCounts} topics"
-            );
         }
         if (!$this->condition) {
             throw new Exceptions\MissingMultipleTopicsCondition(
